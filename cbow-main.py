@@ -336,6 +336,8 @@ def test(args):
     # 単語wordのembeddingを取得
     src_embed = model.embed.W.data[src_vocab2id[args.src_word]]
 
+    print model.embed.W.data.shape
+
     print "src word:", args.src_word
     print src_embed
 
