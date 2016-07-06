@@ -14,7 +14,7 @@ from gensim import corpora, matutils
 from gensim.models import word2vec
 import time
 import math
-from net import NLM
+from net import CBOW
 import util
 import nltk.translate.bleu_score
 import scipy.spatial.distance
@@ -145,7 +145,6 @@ def argument_parser():
 def forward_one_step(model,
                      src_batch,
                      src_vocab2id,
-                     context_window,
                      is_train,
                      xp):
     """ 損失を計算
@@ -233,7 +232,7 @@ def train(args):
         print
 
     # モデルの定義
-    model = NLM(vocab_size, embed_size, hidden_size, context_window)
+    model = CBOW(vocab_size, embed_size)
 
     # GPUを使うかどうか
     if args.use_gpu:
@@ -274,7 +273,6 @@ def train(args):
             hyp_batch, loss = forward_one_step(model,
                                                src_batch,
                                                src_vocab2id,
-                                               context_window,
                                                args.train,
                                                xp) # is_train
             cur_log_perp += loss.data
