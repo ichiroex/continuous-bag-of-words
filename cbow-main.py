@@ -71,10 +71,6 @@ def argument_parser():
                         type=str,
                         default=def_src,
                         help='input file')
-    parser.add_argument('context_window',
-                        type=int,
-                        default=def_context_window,
-                        help='context window')
     parser.add_argument('--train',
                         dest="train",
                         action="store_true",
@@ -161,9 +157,10 @@ def forward_one_step(model,
         loss = Variable(xp.asarray(xp.zeros(()), dtype=xp.float32))
 
         src_batch =  [ [src_vocab2id["<s>"]] + src for src in src_batch]
+
+        print src_batch
+        exit()
         src_batch = xp.asarray(src_batch, dtype=xp.int32).T # 転置
-
-
 
         for i, t_batch in enumerate(src_batch[context_window-1:]):
 
