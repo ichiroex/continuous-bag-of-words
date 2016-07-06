@@ -17,7 +17,7 @@ class CBOW(Chain):
 
         super(CBOW, self).__init__(
             embed = L.EmbedID(vocab_size, embed_size),
-            l2 = L.Linear(embed_size, vocab_size))
+            l1 = L.Linear(embed_size, vocab_size))
 
         self.vocab_size = vocab_size
         self.embed_size = embed_size
@@ -27,6 +27,7 @@ class CBOW(Chain):
         for x in context:
             e = self.embed(x)
             h = h + e if h is not None else e
+        y = self.l1(h)
         return y
 
     def get_embedding(self, x):
