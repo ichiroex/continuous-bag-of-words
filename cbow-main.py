@@ -50,6 +50,7 @@ def argument_parser():
     def_gpu = False
     def_is_debug_mode = False
     def_src = ""
+    def_context_window = 4
     def_model = "nlm"
 
     # Model parameter
@@ -70,6 +71,10 @@ def argument_parser():
                         type=str,
                         default=def_src,
                         help='input file')
+    parser.add_argument('context_window',
+                        type=int,
+                        default=def_context_window,
+                        help='context window')
     parser.add_argument('--train',
                         dest="train",
                         action="store_true",
@@ -140,6 +145,7 @@ def argument_parser():
 def forward_one_step(model,
                      src_batch,
                      src_vocab2id,
+                     context_window,
                      is_train,
                      xp):
     """ 損失を計算
@@ -154,21 +160,25 @@ def forward_one_step(model,
     if is_train:
 
         loss = Variable(xp.asarray(xp.zeros(()), dtype=xp.float32))
+
+        src_batch =  [ [src_vocab2id["<s>"]] + src for src in src_batch]
         src_batch = xp.asarray(src_batch, dtype=xp.int32).T # 転置
 
-        for x1_batch, x2_batch, t_batch in zip(src_batch, src_batch[1:], src_batch[2:]):
 
-            x1 = Variable(x1_batch) #source
-            x2 = Variable(x2_batch) #source
+
+        for i, t_batch in enumerate(src_batch[context_window-1:]):
+
+            x_list = [ Variable(x_batch) for x_batch in src_batch[ i:i+context_window-1 ]]
+
             t = Variable(t_batch) #target
-
-            y = model(x1, x2)
+            y = model(x_list)
 
             loss += F.softmax_cross_entropy(y, t)
             output = cuda.to_cpu(y.data.argmax(1))
 
             for k in range(batch_size):
                 hyp_batch[k].append(output[k])
+
 
         return hyp_batch, loss # 予測結果と損失を返す
 
@@ -191,12 +201,14 @@ def train(args):
     """
 
     # オプションの値をメソッド内の変数に渡す
+    context_window = args.context_window # 文脈窓
     vocab_size  = args.vocab      # 語彙数
     embed_size  = args.embed      # embeddingの次元数
     hidden_size = args.hidden     # 隠れ層のユニット数
     batchsize   = args.batchsize  # バッチサイズ
     n_epoch     = args.epoch      # エポック数(パラメータ更新回数)
     grad_clip   = args.grad_clip  # gradiation clip
+
 
     # 学習データの読み込み
     # Source
@@ -208,6 +220,7 @@ def train(args):
     # debug modeの時, パラメータの確認
     if args.is_debug_mode:
         print "[PARAMETERS]"
+        print 'context window:', context_window
         print 'vocab size:', vocab_size
         print 'embed size:', embed_size
         print 'hidden size:', hidden_size
@@ -220,7 +233,7 @@ def train(args):
         print
 
     # モデルの定義
-    model = NLM(vocab_size, embed_size, hidden_size)
+    model = NLM(vocab_size, embed_size, hidden_size, context_window)
 
     # GPUを使うかどうか
     if args.use_gpu:
@@ -234,7 +247,7 @@ def train(args):
     # Setup optimizer
     optimizer = optimizers.AdaGrad(lr=0.001)
     optimizer.setup(model)
-    #optimizer.add_hook(chainer.optimizer.GradientClipping(grad_clip))
+    optimizer.add_hook(chainer.optimizer.GradientClipping(grad_clip))
 
 
     # 学習の始まり
@@ -261,6 +274,7 @@ def train(args):
             hyp_batch, loss = forward_one_step(model,
                                                src_batch,
                                                src_vocab2id,
+                                               context_window,
                                                args.train,
                                                xp) # is_train
             cur_log_perp += loss.data
@@ -335,6 +349,7 @@ def test(args):
     #print model.embed.W.data.shape
 
     print "src word:", args.src_word
+    print src_embed
     #src_embed = model.embed.W.data[src_vocab2id[args.src_word]]
 
     trg_embed_list = {}
