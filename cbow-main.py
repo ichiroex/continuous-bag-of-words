@@ -333,28 +333,20 @@ def test(args):
     generated = 0
     N = len(test_src_dataset) # テストの事例数
 
-    word_list = src_vocab2id.keys()
-
     # 単語wordのembeddingを取得
-    word_id_list = Variable(xp.asarray([src_vocab2id[word] for word in word_list ], dtype=xp.int32))
-    embedding_list = model.get_embedding(word_id_list)
-    src_embed = embedding_list.data[word_list.index(args.src_word)]
-    #print model.embed.W.data.shape
+    src_embed = model.embed.W.data[src_vocab2id[args.src_word]]
 
     print "src word:", args.src_word
     print src_embed
-    #src_embed = model.embed.W.data[src_vocab2id[args.src_word]]
 
     trg_embed_list = {}
     for _word, _id in src_vocab2id.items():
-        trg_embed = embedding_list.data[word_list.index(_word)]
-        #trg_embed = model.embed.W.data[src_vocab2id[_word]]
+        trg_embed = model.embed.W.data[src_vocab2id[_word]]
         trg_embed_list[_word] = 1 - scipy.spatial.distance.cosine(src_embed, trg_embed)
 
     # 上位10件を表示
     for i, (word, sim) in enumerate(sorted(trg_embed_list.items(), key=lambda x:x[1], reverse=True)):
         print word, sim
-
         if i == 10:
             break
 
