@@ -13,25 +13,20 @@ class CBOW(Chain):
 
     def __init__(self,
                  vocab_size,
-                 embed_size,
-                 hidden_size,
-                 context_window):
+                 embed_size):
 
         super(CBOW, self).__init__(
             embed = L.EmbedID(vocab_size, embed_size),
-            l1 = L.Linear(embed_size * (context_window-1), hidden_size),
-            l2 = L.Linear(hidden_size, vocab_size))
+            l2 = L.Linear(embed_size, vocab_size))
 
         self.vocab_size = vocab_size
         self.embed_size = embed_size
-        self.hidden_size = hidden_size
-        self.context_window = context_window
 
-    def __call__(self, x_list):
-
-        e = F.concat(tuple([self.embed(x) for x in x_list]))
-        h1 = F.tanh(self.l1(e))
-        y = self.l2(h1)
+    def __call__(self, context):
+        h = None
+        for x in context:
+            e = self.embed(x)
+            h = h + e if h is not None else e
         return y
 
     def get_embedding(self, x):
@@ -42,8 +37,6 @@ class CBOW(Chain):
             # パラメータを保存
             print(self.vocab_size, file=fp)
             print(self.embed_size, file=fp)
-            print(self.hidden_size, file=fp)
-            print(self.context_window, file=fp)
 
     @staticmethod
     def load_spec(filename):
@@ -51,6 +44,4 @@ class CBOW(Chain):
             # specファイルからモデルのパラメータをロード
             vocab_size = int(next(fp))
             embed_size = int(next(fp))
-            hidden_size = int(next(fp))
-            context_window = int(next(fp))
-            return NLM(vocab_size, embed_size, hidden_size, context_window)
+            return CBOW(vocab_size, embed_size)
