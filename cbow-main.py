@@ -20,11 +20,7 @@ import nltk.translate.bleu_score
 import scipy.spatial.distance
 
 """
-    Code for Neural Machine Translation
-    Encoder-Decoder モデル
-
-    Encoder: Convolutional Neural Networks
-    Decoder: Reccurent Neural Networks
+    Code for Continuous Bag-Of-Words
 """
 
 def save_model(model, model_name):
@@ -51,7 +47,7 @@ def argument_parser():
     def_is_debug_mode = False
     def_src = ""
     def_context_window = 4
-    def_model = "nlm"
+    def_model = "cbow"
 
     # Model parameter
     def_vocab = 5000
@@ -318,7 +314,7 @@ def test(args):
     src_vocab2id, src_id2vocab, vocab_size = util.load_vocab(args.model + ".srcvocab")
 
     # モデルの読込
-    model = NLM.load_spec(args.model + ".spec")
+    model = CBOW.load_spec(args.model + ".spec")
 
     # GPUを使うかどうか
     if args.use_gpu:
