@@ -158,16 +158,20 @@ def forward_one_step(model,
 
         src_batch =  [ [src_vocab2id["<s>"]] + src for src in src_batch]
 
-        print src_batch
-        exit()
+
         src_batch = xp.asarray(src_batch, dtype=xp.int32).T # 転置
-
-        for i, t_batch in enumerate(src_batch[context_window-1:]):
-
-            x_list = [ Variable(x_batch) for x_batch in src_batch[ i:i+context_window-1 ]]
-
+        N = 2
+        for i, t_batch in enumerate(src_batch[N:len(src_batch)-N]):
+            index = i + N
             t = Variable(t_batch) #target
-            y = model(x_list)
+
+            context = []
+            for offset in range(i, index+N+1):
+                if offset == index:
+                    continue
+                context.append(Variable(src_batch[offset]))
+
+            y = model(context)
 
             loss += F.softmax_cross_entropy(y, t)
             output = cuda.to_cpu(y.data.argmax(1))
@@ -197,7 +201,6 @@ def train(args):
     """
 
     # オプションの値をメソッド内の変数に渡す
-    context_window = args.context_window # 文脈窓
     vocab_size  = args.vocab      # 語彙数
     embed_size  = args.embed      # embeddingの次元数
     hidden_size = args.hidden     # 隠れ層のユニット数
@@ -216,7 +219,6 @@ def train(args):
     # debug modeの時, パラメータの確認
     if args.is_debug_mode:
         print "[PARAMETERS]"
-        print 'context window:', context_window
         print 'vocab size:', vocab_size
         print 'embed size:', embed_size
         print 'hidden size:', hidden_size
